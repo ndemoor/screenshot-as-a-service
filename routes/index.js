@@ -7,6 +7,7 @@ var request = require('request');
 module.exports = function(app) {
   var rasterizerService = app.settings.rasterizerService;
   var fileCleanerService = app.settings.fileCleanerService;
+  var resizerService = app.settings.resizerService;
 
   // routes
   app.get('/', function(req, res, next) {
@@ -23,21 +24,27 @@ module.exports = function(app) {
     ['width', 'height', 'clipRect', 'javascriptEnabled', 'loadImages', 'localToRemoteUrlAccessEnabled', 'userAgent', 'userName', 'password', 'delay'].forEach(function(name) {
       if (req.param(name, false)) options.headers[name] = req.param(name);
     });
+    var resizeWidth = req.param('resizeWidth', false) ? parseInt(req.param('resizeWidth', 10)) : 0;
+    var resizeHeight = req.param('resizeHeight', false) ? parseInt(req.param('resizeHeight', 10)) : 0;
 
-    var filename = 'screenshot_' + utils.md5(url + JSON.stringify(options)) + '.png';
+    var filename = 'screenshot_' + utils.md5(url + JSON.stringify(options) + resizeWidth + resizeHeight) + '.png';
     options.headers.filename = filename;
 
     var filePath = join(rasterizerService.getPath(), filename);
 
     var callbackUrl = req.param('callback', false) ? utils.url(req.param('callback')) : false;
 
-    if (path.existsSync(filePath)) {
+    var refresh = req.param('refresh', false) ? true : false;
+    
+    if (!refresh && path.existsSync(filePath)) {
       console.log('Request for %s - Found in cache', url);
       processImageUsingCache(filePath, res, callbackUrl, function(err) { if (err) next(err); });
       return;
     }
     console.log('Request for %s - Rasterizing it', url);
-    processImageUsingRasterizer(options, filePath, res, callbackUrl, function(err) { if(err) next(err); });
+    processImageUsingRasterizer(
+        options, filePath, res, callbackUrl, resizeWidth, resizeHeight, function(err) { if(err) next(err); }
+    );
   });
 
   app.get('*', function(req, res, next) {
@@ -57,19 +64,23 @@ module.exports = function(app) {
     }
   }
 
-  var processImageUsingRasterizer = function(rasterizerOptions, filePath, res, url, callback) {
+  var processImageUsingRasterizer = function(rasterizerOptions, filePath, res, url, resW, resH, callback) {
     if (url) {
       // asynchronous
       res.send('Will post screenshot to ' + url + ' when processed');
       callRasterizer(rasterizerOptions, function(error) {
         if (error) return callback(error);
-        postImageToUrl(filePath, url, callback);
+        resizerService.resize(filePath, resW, resH, function(error) {
+            postImageToUrl(filePath, url, callback);
+        });
       });
     } else {
       // synchronous
       callRasterizer(rasterizerOptions, function(error) {
         if (error) return callback(error);
-        sendImageInResponse(filePath, res, callback);
+        resizerService.resize(filePath, resW, resH, function(error) {
+            sendImageInResponse(filePath, res, callback);
+        });
       });
     }
   }

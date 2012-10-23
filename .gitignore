@@ -1,3 +1,5 @@
 node_modules
 config/development.yaml
 config/production.yaml
+
+*.c9save
