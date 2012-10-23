@@ -34,4 +34,4 @@ app.configure('development', function() {
 });
 require('./routes')(app);
 app.listen(process.env.PORT);
-console.log('Express server listening on port ' + process.env.PORT);
+console.log('Express server listening on port ' + process.env.PORT + ' in ' + process.env.NODE_ENV);
