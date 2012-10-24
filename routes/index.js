@@ -24,10 +24,16 @@ module.exports = function(app) {
     ['width', 'height', 'clipRect', 'javascriptEnabled', 'loadImages', 'localToRemoteUrlAccessEnabled', 'userAgent', 'userName', 'password', 'delay'].forEach(function(name) {
       if (req.param(name, false)) options.headers[name] = req.param(name);
     });
-    var resizeWidth = req.param('resizeWidth', false) ? parseInt(req.param('resizeWidth', 10)) : 0;
-    var resizeHeight = req.param('resizeHeight', false) ? parseInt(req.param('resizeHeight', 10)) : 0;
+    
+    // Framing options to clip and resize
+    var frame = {
+        resizeWidth: req.param('resizeWidth', false) ? parseInt(req.param('resizeWidth'), 10) : 0,
+        resizeHeight: req.param('resizeHeight', false) ? parseInt(req.param('resizeHeight'), 10) : 0,
+        clipWidth: req.param('clipWidth', false) ? parseInt(req.param('clipWidth'), 10) : 0,
+        clipHeight: req.param('clipHeight', false) ? parseInt(req.param('clipHeight'), 10) : 0
+    };
 
-    var filename = 'screenshot_' + utils.md5(url + JSON.stringify(options) + resizeWidth + resizeHeight) + '.png';
+    var filename = 'screenshot_' + utils.md5(url + JSON.stringify(options) + JSON.stringify(frame)) + '.png';
     options.headers.filename = filename;
 
     var filePath = join(rasterizerService.getPath(), filename);
@@ -43,7 +49,7 @@ module.exports = function(app) {
     }
     console.log('Request for %s - Rasterizing it', url);
     processImageUsingRasterizer(
-        options, filePath, res, callbackUrl, resizeWidth, resizeHeight, function(err) { if(err) next(err); }
+        options, filePath, res, callbackUrl, frame, function(err) { if(err) next(err); }
     );
   });
 
@@ -62,15 +68,15 @@ module.exports = function(app) {
       // synchronous
       sendImageInResponse(filePath, res, callback);
     }
-  }
+  };
 
-  var processImageUsingRasterizer = function(rasterizerOptions, filePath, res, url, resW, resH, callback) {
+  var processImageUsingRasterizer = function(rasterizerOptions, filePath, res, url, frame, callback) {
     if (url) {
       // asynchronous
       res.send('Will post screenshot to ' + url + ' when processed');
       callRasterizer(rasterizerOptions, function(error) {
         if (error) return callback(error);
-        resizerService.resize(filePath, resW, resH, function(error) {
+        resizerService.resize(filePath, frame, function(error) {
             postImageToUrl(filePath, url, callback);
         });
       });
@@ -78,12 +84,12 @@ module.exports = function(app) {
       // synchronous
       callRasterizer(rasterizerOptions, function(error) {
         if (error) return callback(error);
-        resizerService.resize(filePath, resW, resH, function(error) {
+        resizerService.resize(filePath, frame, function(error) {
             sendImageInResponse(filePath, res, callback);
         });
       });
     }
-  }
+  };
 
   var callRasterizer = function(rasterizerOptions, callback) {
     request.get(rasterizerOptions, function(error, response, body) {
@@ -94,7 +100,7 @@ module.exports = function(app) {
       }
       callback(null);
     });
-  }
+  };
 
   var postImageToUrl = function(imagePath, url, callback) {
     console.log('Streaming image to %s', url);
@@ -110,7 +116,7 @@ module.exports = function(app) {
       if (err) console.log('Error while streaming screenshot: %s', err);
       callback(err);
     }));
-  }
+  };
 
   var sendImageInResponse = function(imagePath, res, callback) {
     console.log('Sending image in response');
@@ -118,6 +124,6 @@ module.exports = function(app) {
       fileCleanerService.addFile(imagePath);
       callback(err);
     });
-  }
+  };
 
 };
