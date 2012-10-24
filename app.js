@@ -1,4 +1,8 @@
 /**
+ * NODE_ENV=production PORT=3000 forever start -l /tmp/screengen.log -o /tmp/screengen.out.log -e /tmp/screengen.err.log -w -a app.js
+ * /
+
+/**
  * Module dependencies.
  */
 var config = require('config');
