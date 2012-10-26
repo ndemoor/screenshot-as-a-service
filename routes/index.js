@@ -51,10 +51,14 @@ module.exports = function(app) {
       return;
     }
     console.log('Request for %s - Rasterizing it', url);
-    processImageUsingRasterizer(
-        options, filePath, res, callbackUrl, frame, function(err) { 
-            if(err) return next(new Error(err.message + ' on ' + JSON.stringify(options))); 
-        });
+    processImageUsingRasterizer(options, filePath, res, callbackUrl, frame, function(err) { 
+        if(err) {
+            console.log('Retry!');
+            processImageUsingRasterizer(options, filePath, res, callbackUrl, frame, function(err) { 
+                if(err) return next(new Error(err.message + ' on ' + JSON.stringify(options)));
+            });
+        } 
+    });
   });
 
   app.get('*', function(req, res, next) {
