@@ -54,9 +54,9 @@ module.exports = function(app) {
     processImageUsingRasterizer(options, filePath, res, callbackUrl, frame, function(err) { 
         if(err) {
             console.log('Retry!');
-            processImageUsingRasterizer(options, filePath, res, callbackUrl, frame, function(err) { 
+            setTimeout(processImageUsingRasterizer(options, filePath, res, callbackUrl, frame, function(err) { 
                 if(err) return next(new Error(err.message + ' on ' + JSON.stringify(options)));
-            });
+            }), 1000);
         } 
     });
   });
