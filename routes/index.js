@@ -44,13 +44,17 @@ module.exports = function(app) {
     
     if (!refresh && path.existsSync(filePath)) {
       console.log('Request for %s - Found in cache', url);
-      processImageUsingCache(filePath, res, callbackUrl, function(err) { if (err) next(err); });
+      processImageUsingCache(filePath, res, callbackUrl, function(err) { 
+            if (err) return next(err); 
+            
+      });
       return;
     }
     console.log('Request for %s - Rasterizing it', url);
     processImageUsingRasterizer(
-        options, filePath, res, callbackUrl, frame, function(err) { if(err) next(err); }
-    );
+        options, filePath, res, callbackUrl, frame, function(err) { 
+            if(err) return next(new Error(err.message + ' on ' + JSON.stringify(options))); 
+        });
   });
 
   app.get('*', function(req, res, next) {
@@ -77,6 +81,9 @@ module.exports = function(app) {
       callRasterizer(rasterizerOptions, function(error) {
         if (error) return callback(error);
         resizerService.resize(filePath, frame, function(error) {
+            if(error) {
+                return callback(error);
+            }
             postImageToUrl(filePath, url, callback);
         });
       });
@@ -85,6 +92,9 @@ module.exports = function(app) {
       callRasterizer(rasterizerOptions, function(error) {
         if (error) return callback(error);
         resizerService.resize(filePath, frame, function(error) {
+            if(error) {
+                return callback(error);
+            }
             sendImageInResponse(filePath, res, callback);
         });
       });
@@ -121,8 +131,11 @@ module.exports = function(app) {
   var sendImageInResponse = function(imagePath, res, callback) {
     console.log('Sending image in response');
     res.sendfile(imagePath, function(err) {
-      fileCleanerService.addFile(imagePath);
-      callback(err);
+        if(err) {
+            return callback(err);
+        }
+        fileCleanerService.addFile(imagePath);
+        callback(null);
     });
   };
 
