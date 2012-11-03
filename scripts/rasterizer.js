@@ -91,12 +91,12 @@ service = server.listen(port, function(request, response) {
       window.setTimeout(function () {
         page.render(path);
         response.write('Success: Screenshot saved to ' + path + "\n");
-        page.release();
+        page.close();
         response.close();
       }, delay);
     } else {
       response.write('Error: Url returned status ' + status + "\n");
-      page.release();
+      page.close();
       response.close();
     }
   });
