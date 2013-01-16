@@ -55,12 +55,14 @@ service = server.listen(port, function(request, response) {
     response.statusCode = 200;
     response.write('up');
     response.close();
+    response.release();
     return;
   }
   if (!request.headers.url) {
     response.statusCode = 400;
     response.write('Error: Request must contain an url header' + "\n");
     response.close();
+    response.release();
     return;
   }
   var url = request.headers.url;
@@ -92,12 +94,16 @@ service = server.listen(port, function(request, response) {
         page.render(path);
         response.write('Success: Screenshot saved to ' + path + "\n");
         page.close();
+        page.release();
         response.close();
+        response.release();
       }, delay);
     } else {
       response.write('Error: Url returned status ' + status + "\n");
       page.close();
+      page.release();
       response.close();
+      response.release();
     }
   });
   // must start the response now, or phantom closes the connection
