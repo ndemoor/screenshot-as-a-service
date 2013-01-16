@@ -94,9 +94,9 @@ service = server.listen(port, function(request, response) {
         page.render(path);
         response.write('Success: Screenshot saved to ' + path + "\n");
         page.close();
-		page.release();
+        page.release();
         response.close();
-		response.release();
+        response.release();
       }, delay);
     } else {
       response.write('Error: Url returned status ' + status + "\n");
